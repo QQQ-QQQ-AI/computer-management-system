@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('用户与权限')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','user')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('用户与权限管理')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="card-box">
+                        <h6 id="formTitle">新增员工账号</h6>
+                        <form method="post" th:action="@{/admin/user/save}" id="userForm">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" id="uid">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="username">登录账号 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="username" name="username"
+                                       maxlength="32" placeholder="如 cashier03">
+                                <div class="hint mt-1" id="usernameHint">新增时必填，编辑时不可修改。</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="realName">真实姓名 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="realName" name="realName"
+                                       required maxlength="32">
+                            </div>
+                            <div class="mb-3" id="passwordBlock">
+                                <label class="form-label" for="password">初始密码 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="password" name="password"
+                                       minlength="6" placeholder="至少 6 位">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="role">角色 <span style="color:#dc2626">*</span></label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="CASHIER" selected>收银员</option>
+                                    <option value="ADMIN">管理员</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">保存</button>
+                            <button type="button" class="btn btn-outline-secondary" id="resetBtn">清空</button>
+                        </form>
+                    </div>
+
+                    <div class="card-box">
+                        <h6>角色权限说明</h6>
+                        <div class="hint" style="line-height:2">
+                            · <strong>收银员</strong>：会员开卡、开台、下机结算、商品记账、充值办理、
+                            租赁办理、预约核销。<br>
+                            · <strong>管理员</strong>：除上述业务外，另有计费规则、机位、会员、
+                            商品、设备、预约、公告的管理权限与营收统计报表。<br>
+                            · 权限按 URL 前缀隔离（/member、/cashier、/admin），
+                            越权访问会被拦截并跳回本角色首页。<br>
+                            · <strong>账号一律停用而非删除</strong>：删除会丢失其历史业务记录的经办人关联，
+                            导致充值流水、上机记录无法追溯责任人。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card-box">
+                        <h6>收银员账号（<span th:text="${#lists.size(cashiers)}">0</span> 个）</h6>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>账号</th>
+                                <th>姓名</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="u : ${cashiers}"
+                                th:attr="data-id=${u.id},data-username=${u.username},data-realname=${u.realName},data-role=${u.role}">
+                                <td th:text="${u.username}">cashier01</td>
+                                <td th:text="${u.realName}">姓名</td>
+                                <td>
+                                    <span class="badge-soft bs-green" th:if="${u.status == 1}">启用</span>
+                                    <span class="badge-soft bs-gray" th:if="${u.status != 1}">已停用</span>
+                                </td>
+                                <td class="hint" th:text="${#temporals.format(u.createTime, 'yyyy-MM-dd')}">-</td>
+                                <td style="white-space:nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
+                                    <form method="post" th:action="@{/admin/user/status}" style="display:inline">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <input type="hidden" name="id" th:value="${u.id}">
+                                        <input type="hidden" name="status" th:value="${u.status == 1} ? 0 : 1">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                th:text="${u.status == 1} ? '停用' : '启用'">停用</button>
+                                    </form>
+                                    <form method="post" th:action="@{/admin/user/reset-password}" style="display:inline"
+                                          onsubmit="return confirm('确认重置该账号密码？');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <input type="hidden" name="id" th:value="${u.id}">
+                                        <input type="hidden" name="newPassword" value="123456">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">重置密码</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card-box">
+                        <h6>管理员账号（<span th:text="${#lists.size(admins)}">0</span> 个）</h6>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>账号</th>
+                                <th>姓名</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="u : ${admins}"
+                                th:attr="data-id=${u.id},data-username=${u.username},data-realname=${u.realName},data-role=${u.role}">
+                                <td th:text="${u.username}">admin</td>
+                                <td th:text="${u.realName}">姓名</td>
+                                <td>
+                                    <span class="badge-soft bs-green" th:if="${u.status == 1}">启用</span>
+                                    <span class="badge-soft bs-gray" th:if="${u.status != 1}">已停用</span>
+                                </td>
+                                <td class="hint" th:text="${#temporals.format(u.createTime, 'yyyy-MM-dd')}">-</td>
+                                <td style="white-space:nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
+                                    <form method="post" th:action="@{/admin/user/status}" style="display:inline">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <input type="hidden" name="id" th:value="${u.id}">
+                                        <input type="hidden" name="status" th:value="${u.status == 1} ? 0 : 1">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                th:text="${u.status == 1} ? '停用' : '启用'">停用</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div class="hint mt-3">
+                            「重置密码」会把账号密码重置为 <strong>123456</strong>，请提醒本人登录后立即修改。
+                            不能停用当前登录的账号。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+<script>
+    document.querySelectorAll('.edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var tr = this.closest('tr');
+            document.getElementById('uid').value = tr.dataset.id;
+            document.getElementById('username').value = tr.dataset.username;
+            document.getElementById('realName').value = tr.dataset.realname;
+            document.getElementById('role').value = tr.dataset.role;
+            // 编辑模式下不修改账号与密码，避免误改
+            document.getElementById('username').readOnly = true;
+            document.getElementById('passwordBlock').style.display = 'none';
+            document.getElementById('password').required = false;
+            document.getElementById('formTitle').textContent = '编辑账号 ' + tr.dataset.username;
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+    });
+    document.getElementById('resetBtn').addEventListener('click', function () {
+        document.getElementById('userForm').reset();
+        document.getElementById('uid').value = '';
+        document.getElementById('username').readOnly = false;
+        document.getElementById('passwordBlock').style.display = '';
+        document.getElementById('password').required = true;
+        document.getElementById('formTitle').textContent = '新增员工账号';
+    });
+</script>
+</body>
+</html>

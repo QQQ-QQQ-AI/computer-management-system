@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('门店公告')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('cashier','notices')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('门店公告')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>公告列表</h6>
+                <div th:if="${#lists.isEmpty(notices)}" class="empty">暂无公告</div>
+
+                <div th:each="n : ${notices}" class="pb-3 mb-3" style="border-bottom:1px solid #f1f3f5">
+                    <div style="font-size:15px;font-weight:500" th:text="${n.title}">公告标题</div>
+                    <div class="hint mt-1"
+                         th:text="'发布于 ' + ${#temporals.format(n.createTime, 'yyyy-MM-dd HH:mm')}"></div>
+                    <div class="mt-2" style="font-size:13.5px;line-height:1.8;white-space:pre-wrap"
+                         th:text="${n.content}">公告内容</div>
+                </div>
+
+                <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                    公告由管理员发布，在此与会员端同步展示，保证业务办理口径一致。
+                    涉及计费调整、优惠活动的公告请务必先阅读再向顾客解释。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

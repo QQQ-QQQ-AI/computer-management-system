@@ -1,0 +1,53 @@
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 60m
+      # 只允许 Cookie 方式传递会话，禁用 URL 重写。
+      # 若允许 ;jsessionid=xxx 出现在地址栏，会话标识会经由 Referer、访问日志、
+      # 被分享的链接外泄，攻击者拿到即可直接冒用登录态。
+      tracking-modes: cookie
+
+spring:
+  application:
+    name: cafe-management-system
+
+  # ---------- 数据库 ----------
+  # 账号密码优先读环境变量，没配就用下面的默认值，改这里即可
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/cafe_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+
+  # ---------- Thymeleaf ----------
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+
+  mvc:
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+
+# ---------- MyBatis-Plus ----------
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.cafe.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      table-underline: true
+
+logging:
+  level:
+    root: info
+    com.cafe: debug
+  pattern:
+    console: "%d{HH:mm:ss} %-5level %logger{0} - %msg%n"

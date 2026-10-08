@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('租赁办理')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('cashier','rental')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('设备租赁办理')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+            <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6>办理租借</h6>
+
+                        <form method="get" th:action="@{/cashier/rental}" class="mb-3">
+                            <label class="form-label">读取会员</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="cardNo"
+                                       th:value="${cardNo}" placeholder="扫描或输入会员卡号" required>
+                                <button type="submit" class="btn btn-outline-primary">查询</button>
+                            </div>
+                        </form>
+
+                        <div th:if="${member != null}">
+                            <div class="mb-3 p-3" style="background:#fafbfc;border-radius:8px">
+                                <div style="font-size:15px;font-weight:500" th:text="${member.name}">姓名</div>
+                                <div class="hint" th:text="${member.cardNo}">卡号</div>
+                                <div class="mt-2">
+                                    可用余额
+                                    <strong style="font-size:17px;color:#185fa5"
+                                            th:text="${#numbers.formatDecimal(member.balance, 1, 2)}">0.00</strong> 元
+                                    <span class="hint" th:if="${member.deposit.signum() > 0}"
+                                          th:text="'　已冻结押金 ' + ${#numbers.formatDecimal(member.deposit, 1, 2)} + ' 元'"></span>
+                                </div>
+                            </div>
+
+                            <form method="post" th:action="@{/cashier/rental/rent}"
+                                  onsubmit="return confirm('确认办理租借？将从可用余额冻结对应押金。');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <input type="hidden" name="cardNo" th:value="${member.cardNo}">
+
+                                <div class="mb-3">
+                                    <label class="form-label">选择在库设备</label>
+                                    <div th:if="${#lists.isEmpty(available)}" class="hint">当前没有在库设备</div>
+                                    <select class="form-select" name="equipmentId" required
+                                            th:unless="${#lists.isEmpty(available)}">
+                                        <option value="">请选择设备</option>
+                                        <option th:each="e : ${available}" th:value="${e.id}"
+                                                th:text="${e.code} + ' · ' + ${e.category}
+                                                         + '　日租金 ' + ${#numbers.formatDecimal(e.rentPrice, 1, 2)}
+                                                         + ' 元　押金 ' + ${#numbers.formatDecimal(e.deposit, 1, 2)} + ' 元'">
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary"
+                                        th:disabled="${#lists.isEmpty(available)}">办理租借</button>
+                            </form>
+                        </div>
+
+                        <div th:if="${member == null}" class="empty">请先查询会员卡号</div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>待归还设备（<span th:text="${#lists.size(renting)}">0</span> 条）</h6>
+                        <div th:if="${#lists.isEmpty(renting)}" class="empty">当前没有借出未归还的设备</div>
+
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(renting)}">
+                            <thead>
+                            <tr>
+                                <th>会员</th>
+                                <th>设备</th>
+                                <th>租借时间</th>
+                                <th class="text-end">冻结押金</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="r : ${renting}">
+                                <td>
+                                    <span th:text="${r.memberName}">会员</span>
+                                    <span class="hint" th:text="'(' + ${r.cardNo} + ')'"></span>
+                                </td>
+                                <td th:text="${r.category} + ' ' + ${r.equipmentCode}">设备</td>
+                                <td th:text="${#temporals.format(r.rentTime, 'MM-dd HH:mm')}">-</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(r.deposit, 1, 2)}">0.00</td>
+                                <td>
+                                    <form method="post" th:action="@{/cashier/rental/return}" style="display:inline"
+                                          onsubmit="return confirm('确认设备已归还且无损坏？将解冻押金并按租期收取租金。');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <input type="hidden" name="rentalId" th:value="${r.id}">
+                                        <button type="submit" class="btn btn-sm btn-primary">办理归还</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb;line-height:2">
+                            · 租借时按设备标准<strong>冻结押金</strong>：可用余额减少、冻结押金等额增加，
+                            两者同时变动并写入账户流水。<br>
+                            · 归还时先<strong>解冻押金</strong>（余额恢复）再<strong>扣收租金</strong>，
+                            顺序颠倒会导致余额不足以扣租金。<br>
+                            · 租金按租期计算，<strong>不足一天按一天计</strong>。<br>
+                            · 押金不是消费，只有租金才计入营业收入。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

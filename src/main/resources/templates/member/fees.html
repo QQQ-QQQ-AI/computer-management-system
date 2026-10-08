@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('上机费用')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('member','fees')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('上机费用查询')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="stat-grid">
+                <div class="stat">
+                    <div class="label">累计上机费</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(hourSum, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">累计商品费</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(productSum, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">累计消费合计</div>
+                    <div class="value">
+                        <span th:text="${#numbers.formatDecimal(totalSum, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <h6>上机费用明细</h6>
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无已结算记录</div>
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>记录号</th>
+                        <th>机位</th>
+                        <th>结算时间</th>
+                        <th class="text-end">计费时长</th>
+                        <th class="text-end">上机费</th>
+                        <th class="text-end">商品费</th>
+                        <th class="text-end">合计</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s : ${page.records}">
+                        <td th:text="'#' + ${s.id}">#1</td>
+                        <td th:text="${s.seatNo}">A01</td>
+                        <td th:text="${#temporals.format(s.endTime, 'yyyy-MM-dd HH:mm')}">-</td>
+                        <td class="text-end" th:text="${s.durationMinutes} + ' 分'">—</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(s.hourFee, 1, 2)}">0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(s.productFee, 1, 2)}">0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(s.totalFee, 1, 2)}">0.00</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-secondary"
+                               th:href="@{/member/orders(sessionId=${s.id})}">商品明细</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/member/fees(page=${page.current - 1})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/member/fees(page=${page.current + 1})}">下一页</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <h6>商品消费明细</h6>
+                <div th:if="${#lists.isEmpty(orders)}" class="empty">暂无商品消费</div>
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(orders)}">
+                    <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>商品</th>
+                        <th class="text-end">数量</th>
+                        <th class="text-end">金额</th>
+                        <th>结算方式</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="o : ${orders}">
+                        <td th:text="${#temporals.format(o.createTime, 'yyyy-MM-dd HH:mm')}">-</td>
+                        <td th:text="${o.productName}">商品</td>
+                        <td class="text-end" th:text="${o.quantity}">1</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(o.amount, 1, 2)}">0.00</td>
+                        <td>
+                            <span class="badge-soft bs-amber" th:if="${o.sessionId != null}">随上机结算</span>
+                            <span class="badge-soft bs-blue" th:if="${o.sessionId == null}">当场结清</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="mt-3">
+                    <span th:text="'共 ' + ${orderPage.total} + ' 条，第 ' + ${orderPage.current} + ' 页'"></span>
+                    <a class="btn btn-sm btn-outline-secondary" th:if="${orderPage.current > 1}" th:href="@{/member/fees(page=${page.current},orderPage=${orderPage.current - 1})}">上一页</a>
+                    <a class="btn btn-sm btn-outline-secondary" th:if="${orderPage.current < orderPage.pages}" th:href="@{/member/fees(page=${page.current},orderPage=${orderPage.current + 1})}">下一页</a>
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/member/orders}">查看全部商品明细</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('在线充值')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('member','recharge')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('在线充值')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6>充值</h6>
+                        <div class="mb-3">
+                            <div class="hint">当前余额</div>
+                            <div style="font-size:22px;font-weight:500;color:#185fa5">
+                                <span th:text="${#numbers.formatDecimal(member.balance, 1, 2)}">0.00</span>
+                                <span style="font-size:13px;color:#9ca3af">元</span>
+                            </div>
+                        </div>
+
+                        <form method="post" th:action="@{/member/recharge}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <div class="mb-3">
+                                <label class="form-label">快捷金额</label>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick" data-v="30">30 元</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick" data-v="50">50 元</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick" data-v="100">100 元</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick" data-v="200">200 元</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick" data-v="300">300 元</button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="amount">充值金额（元）</label>
+                                <input type="number" class="form-control" id="amount" name="amount"
+                                       step="0.01" min="0.01" required placeholder="请输入充值金额">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">模拟充值（不产生真实支付）</button>
+                        </form>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                            线上充值为演示流程，提交后余额即时到账并生成充值流水。
+                            实际营业中线上支付需接入第三方支付渠道，本项目未做对接。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>充值记录</h6>
+                        <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无充值记录</div>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                            <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>方式</th>
+                                <th class="text-end">金额（元）</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="r : ${page.records}">
+                                <td th:text="${#temporals.format(r.createTime, 'yyyy-MM-dd HH:mm:ss')}">-</td>
+                                <td>
+                                    <span class="badge-soft bs-blue" th:if="${r.type == 'ONLINE'}">线上自助</span>
+                                    <span class="badge-soft bs-amber" th:if="${r.type == 'CASH'}">收银台现金</span>
+                                </td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(r.amount, 1, 2)}">0.00</td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="hint"
+                                 th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                            <div>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current <= 1} ? 'disabled'"
+                                   th:href="@{/member/recharge(page=${page.current - 1})}">上一页</a>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current >= page.pages} ? 'disabled'"
+                                   th:href="@{/member/recharge(page=${page.current + 1})}">下一页</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+<script>
+    document.querySelectorAll('.quick').forEach(function (b) {
+        b.addEventListener('click', function () {
+            document.getElementById('amount').value = this.dataset.v;
+        });
+    });
+</script>
+</body>
+</html>

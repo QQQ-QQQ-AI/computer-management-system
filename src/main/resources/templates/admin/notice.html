@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('公告管理')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','notice')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('公告管理')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6 th:text="${editing != null} ? '编辑公告' : '发布新公告'">发布新公告</h6>
+                        <form method="post" th:action="@{/admin/notice/save}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" th:if="${editing != null}" th:value="${editing.id}">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="title">公告标题 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                       required maxlength="128" th:value="${editing != null} ? ${editing.title} : ''">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="content">公告内容 <span style="color:#dc2626">*</span></label>
+                                <textarea class="form-control" id="content" name="content" rows="8" required
+                                          th:text="${editing != null} ? ${editing.content} : ''"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary"
+                                    th:text="${editing != null} ? '保存修改' : '发布公告'">发布公告</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/admin/notice}"
+                               th:if="${editing != null}">取消编辑</a>
+                        </form>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                            公告发布后<strong>会员端与收银员端同步可见</strong>，用于统一业务办理口径。
+                            涉及计费调整、优惠活动的公告建议写清生效时间。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>公告列表（共 <span th:text="${page.total}">0</span> 条）</h6>
+
+                        <form method="get" th:action="@{/admin/notice}" class="mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="keyword" th:value="${keyword}"
+                                       placeholder="按标题搜索">
+                                <button type="submit" class="btn btn-outline-primary">搜索</button>
+                            </div>
+                        </form>
+
+                        <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无公告</div>
+
+                        <div th:each="n : ${page.records}" class="pb-3 mb-3" style="border-bottom:1px solid #f1f3f5">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div style="font-size:14.5px;font-weight:500" th:text="${n.title}">公告标题</div>
+                                <div style="white-space:nowrap">
+                                    <span class="badge-soft bs-green" th:if="${n.status == 1}">已发布</span>
+                                    <span class="badge-soft bs-gray" th:if="${n.status != 1}">已撤下</span>
+                                </div>
+                            </div>
+                            <div class="hint mt-1"
+                                 th:text="'发布于 ' + ${#temporals.format(n.createTime, 'yyyy-MM-dd HH:mm')}
+                                          + (${n.updateTime != null} ? '　最后修改 ' + ${#temporals.format(n.updateTime, 'yyyy-MM-dd HH:mm')} : '')">
+                            </div>
+                            <div class="mt-2" style="font-size:13px;line-height:1.8;white-space:pre-wrap"
+                                 th:text="${n.content}">公告内容</div>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary"
+                                   th:href="@{/admin/notice(editId=${n.id})}">编辑</a>
+                                <form method="post" th:action="@{/admin/notice/status}" style="display:inline">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="hidden" name="id" th:value="${n.id}">
+                                    <input type="hidden" name="status" th:value="${n.status == 1} ? 0 : 1">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                            th:text="${n.status == 1} ? '撤下' : '重新发布'">撤下</button>
+                                </form>
+                                <form method="post" th:action="@{/admin/notice/delete}" style="display:inline" onsubmit="return confirm('确认删除这条公告？');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="hidden" name="id" th:value="${n.id}">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">删除</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="hint"
+                                 th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                            <div>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current <= 1} ? 'disabled'"
+                                   th:href="@{/admin/notice(page=${page.current - 1}, keyword=${keyword})}">上一页</a>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current >= page.pages} ? 'disabled'"
+                                   th:href="@{/admin/notice(page=${page.current + 1}, keyword=${keyword})}">下一页</a>
+                            </div>
+                        </div>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                            撤下的公告可以重新发布；删除后不再显示，历史内容保留用于追溯。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

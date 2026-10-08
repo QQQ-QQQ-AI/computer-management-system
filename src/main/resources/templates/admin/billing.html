@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('计费规则配置')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','billing')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('计费规则配置')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>计费规则与试算结果</h6>
+                <div class="hint mb-3">
+                    下表为<strong>按不打折</strong>试算的应收金额，用于确认价格配置是否符合预期；
+                    实际结算还会叠加会员折扣。标「套餐」表示该时长下包时套餐比按小时更便宜，系统会自动取优。
+                </div>
+
+                <table class="table table-sm mb-0">
+                    <thead>
+                    <tr>
+                        <th rowspan="2" style="vertical-align:middle">区域</th>
+                        <th rowspan="2" style="vertical-align:middle">小时单价</th>
+                        <th rowspan="2" style="vertical-align:middle">包时套餐</th>
+                        <th rowspan="2" style="vertical-align:middle">区域会员折扣</th>
+                        <th colspan="5" class="text-center">按不打折试算（元）</th>
+                        <th rowspan="2" style="vertical-align:middle">状态</th>
+                        <th rowspan="2"></th>
+                    </tr>
+                    <tr>
+                        <th th:each="m : ${previewMinutes}" class="text-end"
+                            th:text="${m} + ' 分钟'">60 分钟</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${preview}"
+                        th:attr="data-id=${row.id},data-area=${row.area},data-hour=${row.hourPrice},
+                                 data-pkgh=${row.packageHours},data-pkgp=${row.packagePrice},
+                                 data-disc=${row.memberDiscount}">
+                        <td th:text="${row.area}">普通区</td>
+                        <td th:text="${#numbers.formatDecimal(row.hourPrice, 1, 2)} + ' 元/时'">6.00 元/时</td>
+                        <td>
+                            <span th:if="${row.packageHours != null}"
+                                  th:text="${row.packageHours} + ' 小时 / ' + ${#numbers.formatDecimal(row.packagePrice, 1, 2)} + ' 元'">-</span>
+                            <span th:unless="${row.packageHours != null}" class="hint">未设置</span>
+                        </td>
+                        <td th:text="${row.memberDiscount}">1.00</td>
+                        <td class="text-end" th:each="cell : ${row.cells}">
+                            <span th:text="${cell.fee != null} ? ${#numbers.formatDecimal(cell.fee, 1, 2)} : '—'">0.00</span>
+                            <div th:if="${cell.hitPackage}" class="hint" style="font-size:11px;color:#3b6d11">套餐</div>
+                        </td>
+                        <td>
+                            <span class="badge-soft bs-green" th:if="${row.status == 1}">启用</span>
+                            <span class="badge-soft bs-gray" th:if="${row.status != 1}">停用</span>
+                        </td>
+                        <td style="white-space:nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
+                            <form method="post" th:action="@{/admin/billing/status}" style="display:inline">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <input type="hidden" name="id" th:value="${row.id}">
+                                <input type="hidden" name="status" th:value="${row.status == 1} ? 0 : 1">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                        th:text="${row.status == 1} ? '停用' : '启用'">停用</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6 id="formTitle">新增计费规则</h6>
+                        <form method="post" th:action="@{/admin/billing/save}" id="billingForm">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" id="ruleId">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="area">区域名称 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="area" name="area" required
+                                       placeholder="需与机位的所属区域名称完全一致">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="hourPrice">小时单价（元/小时） <span style="color:#dc2626">*</span></label>
+                                <input type="number" step="0.01" min="0.01" class="form-control"
+                                       id="hourPrice" name="hourPrice" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label" for="packageHours">包时套餐时长（小时）</label>
+                                    <input type="number" min="1" class="form-control" id="packageHours" name="packageHours"
+                                           placeholder="留空表示不设套餐">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label" for="packagePrice">包时套餐价格（元）</label>
+                                    <input type="number" step="0.01" min="0.01" class="form-control"
+                                           id="packagePrice" name="packagePrice">
+                                </div>
+                            </div>
+                            <div class="hint mb-3" style="margin-top:-8px">
+                                套餐时长与价格必须<strong>同时填写或同时留空</strong>。
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="memberDiscount">区域会员折扣</label>
+                                <input type="number" step="0.01" min="0.01" max="1" class="form-control"
+                                       id="memberDiscount" name="memberDiscount" value="1.00">
+                                <div class="hint mt-1">
+                                    取值 0.01 ~ 1.00，例如 0.9 表示九折。
+                                    实际折扣取本值与<strong>会员等级折扣</strong>中更优惠的一个。
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">保存</button>
+                            <button type="button" class="btn btn-outline-secondary" id="resetBtn">清空</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>计费规则说明</h6>
+                        <div class="hint" style="line-height:2">
+                            · <strong>调价只改数据不改代码</strong>：区域单价、包时套餐、会员折扣全部存于数据库，
+                            管理员调整后立即对后续结算生效，无需修改程序重新部署。<br>
+                            · <strong>计费时长向上取整到 5 分钟</strong>，不满 5 分钟按 5 分钟计。<br>
+                            · <strong>折扣取更优惠者</strong>：实际折扣 = min(本表的区域会员折扣, 会员等级折扣)。
+                            不采用两者相乘 —— 相乘会算出 0.855 这类难以向顾客解释的数字。<br>
+                            · <strong>自动取优</strong>：按小时与包时套餐分别计算，取金额更低者；
+                            超出套餐的部分仍按小时计。上表标「套餐」的格子即为命中情形。<br>
+                            · 区域名称必须与机位的所属区域<strong>完全一致</strong>，
+                            否则该区域的机位结算时会报「未配置计费规则」。<br>
+                            · 停用某条规则后，该区域的机位将无法结算，请谨慎操作。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+<script>
+    document.querySelectorAll('.edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var tr = this.closest('tr');
+            document.getElementById('ruleId').value = tr.dataset.id;
+            document.getElementById('area').value = tr.dataset.area;
+            document.getElementById('hourPrice').value = tr.dataset.hour;
+            document.getElementById('packageHours').value = tr.dataset.pkgh || '';
+            document.getElementById('packagePrice').value = tr.dataset.pkgp || '';
+            document.getElementById('memberDiscount').value = tr.dataset.disc;
+            document.getElementById('formTitle').textContent = '编辑「' + tr.dataset.area + '」计费规则';
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+    });
+    document.getElementById('resetBtn').addEventListener('click', function () {
+        document.getElementById('billingForm').reset();
+        document.getElementById('ruleId').value = '';
+        document.getElementById('formTitle').textContent = '新增计费规则';
+    });
+</script>
+</body>
+</html>

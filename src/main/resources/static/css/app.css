@@ -1,0 +1,499 @@
+/* =============================================================
+   网咖管理系统 全局样式
+   左侧深色导航 + 右侧浅色内容区，是后台管理系统的常见布局，
+   深色侧栏能把导航与内容区分开，视线不容易串行。
+   ============================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f4f6f9;
+    color: #1f2937;
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+}
+
+/* ---------- 整体布局 ---------- */
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    flex: 0 0 208px;
+    width: 208px;
+    background: #1f2937;
+    color: #cbd5e1;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .brand {
+    padding: 18px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    line-height: 1.5;
+}
+
+.sidebar .brand small {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.sidebar nav {
+    padding: 10px 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar nav a {
+    display: block;
+    padding: 10px 20px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 13.5px;
+    border-left: 3px solid transparent;
+    transition: background .15s, color .15s;
+}
+
+.sidebar nav a:hover {
+    background: rgba(255, 255, 255, .06);
+    color: #fff;
+}
+
+.sidebar nav a.active {
+    background: rgba(37, 99, 235, .22);
+    border-left-color: #3b82f6;
+    color: #fff;
+}
+
+.sidebar .role-tag {
+    padding: 12px 20px;
+    font-size: 12px;
+    color: #64748b;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---------- 顶栏 ---------- */
+
+.topbar {
+    height: 54px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    flex: 0 0 54px;
+}
+
+.topbar .page-title {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.topbar .user-info {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.topbar .user-info a {
+    color: #2563eb;
+    text-decoration: none;
+    margin-left: 14px;
+}
+
+.content {
+    padding: 20px 22px 40px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* ---------- 卡片与表格 ---------- */
+
+.card-box {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+}
+
+.card-box h6 {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.stat {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px 18px;
+}
+
+.stat .label {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.stat .value {
+    font-size: 22px;
+    font-weight: 500;
+    color: #185fa5;
+    line-height: 1.2;
+}
+
+.stat .value.small {
+    font-size: 17px;
+}
+
+.stat .unit {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-left: 3px;
+    font-weight: 400;
+}
+
+/* ---------- 机位看板（座位图） ---------- */
+
+.seat-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 10px;
+}
+
+.seat-cell {
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+    border: 1px solid;
+    font-size: 13px;
+    line-height: 1.45;
+    position: relative;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+/* 悬停微微抬起，暗示可交互 */
+.seat-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .12);
+}
+
+.seat-cell .no {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+.seat-cell .st {
+    font-size: 11.5px;
+}
+
+/* 格子内的次要信息行（会员名、已上机时长等） */
+.seat-cell .sub {
+    font-size: 10.5px;
+    margin-top: 3px;
+    opacity: .85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 状态指示灯：左上角小圆点，远处也能一眼分辨 */
+.seat-cell .dot {
+    position: absolute;
+    top: 6px;
+    left: 7px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+/* 使用中与预约中加呼吸动画，突出「正在变化」的状态 */
+@keyframes seat-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .35; }
+}
+
+.seat-cell.is-live .dot {
+    animation: seat-pulse 1.8s ease-in-out infinite;
+}
+
+/* 空闲 —— 绿色 */
+.seat-free {
+    background: #eaf3de;
+    border-color: #97c459;
+    color: #3b6d11;
+}
+.seat-free .dot { background: #639922; }
+
+/* 使用中 —— 红色 */
+.seat-using {
+    background: #fcebeb;
+    border-color: #f09595;
+    color: #a32d2d;
+}
+.seat-using .dot { background: #e24b4a; }
+
+/* 维修 —— 黄色 */
+.seat-maintenance {
+    background: #faeeda;
+    border-color: #ef9f27;
+    color: #854f0b;
+}
+.seat-maintenance .dot { background: #ef9f27; }
+
+/* 预约 —— 蓝色 */
+.seat-reserved {
+    background: #e6f1fb;
+    border-color: #85b7eb;
+    color: #0c447c;
+}
+.seat-reserved .dot { background: #378add; }
+
+/* 图例 */
+.seat-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #e9e9e4;
+    font-size: 12.5px;
+    color: #5f5e5a;
+}
+
+.seat-legend .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.seat-legend .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid;
+    display: inline-block;
+}
+
+.seat-legend .swatch.free        { background: #eaf3de; border-color: #97c459; }
+.seat-legend .swatch.using       { background: #fcebeb; border-color: #f09595; }
+.seat-legend .swatch.maintenance { background: #faeeda; border-color: #ef9f27; }
+.seat-legend .swatch.reserved    { background: #e6f1fb; border-color: #85b7eb; }
+
+.seat-legend .num {
+    font-weight: 600;
+    color: #2c2c2a;
+}
+
+/* 实时刷新状态条 */
+.seat-livebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.seat-livebar .pulse {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #5f5e5a;
+}
+
+.seat-livebar .pulse .led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #639922;
+    animation: seat-pulse 1.8s ease-in-out infinite;
+}
+
+.seat-livebar .pulse .btn {
+    padding: 1px 9px;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .seat-cell.is-live .dot,
+    .seat-livebar .pulse .led {
+        animation: none;
+    }
+    .seat-cell:hover {
+        transform: none;
+    }
+}
+
+/* 区域分组标题 */
+.seat-area-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #7a7a74;
+    margin: 16px 0 8px;
+    padding-left: 2px;
+}
+
+.seat-area-title:first-child {
+    margin-top: 0;
+}
+
+/* ---------- 登录页 ---------- */
+
+.login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f6f9;
+    padding: 20px;
+}
+
+.login-card {
+    width: 400px;
+    max-width: 100%;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 32px 30px;
+}
+
+.login-card h1 {
+    font-size: 19px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    text-align: center;
+}
+
+.login-card .sub {
+    font-size: 12.5px;
+    color: #9ca3af;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.login-tabs {
+    display: flex;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 18px;
+}
+
+.login-tabs label {
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+    font-size: 13.5px;
+    cursor: pointer;
+    color: #6b7280;
+    background: #fafbfc;
+    margin: 0;
+}
+
+.login-tabs input[type=radio] {
+    display: none;
+}
+
+.login-tabs input[type=radio]:checked + label {
+    background: #2563eb;
+    color: #fff;
+}
+
+/* ---------- 其它 ---------- */
+
+.table > :not(caption) > * > * {
+    padding: .55rem .65rem;
+}
+
+.table thead th {
+    font-weight: 500;
+    color: #4b5563;
+    background: #fafbfc;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.table td {
+    font-size: 13.5px;
+    vertical-align: middle;
+}
+
+.form-label {
+    font-size: 13.5px;
+    margin-bottom: 4px;
+    color: #374151;
+}
+
+.form-control, .form-select {
+    font-size: 13.5px;
+}
+
+.btn {
+    font-size: 13.5px;
+}
+
+.hint {
+    font-size: 12.5px;
+    color: #9ca3af;
+    line-height: 1.7;
+}
+
+.empty {
+    text-align: center;
+    color: #9ca3af;
+    padding: 34px 0;
+    font-size: 13.5px;
+}
+
+.badge-soft {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.bs-green { background: #eaf3de; color: #3b6d11; }
+.bs-red { background: #fcebeb; color: #a32d2d; }
+.bs-gray { background: #f1efe8; color: #5f5e5a; }
+.bs-blue { background: #e6f1fb; color: #185fa5; }
+.bs-amber { background: #faeeda; color: #854f0b; }
+
+.chart {
+    width: 100%;
+    height: 320px;
+}

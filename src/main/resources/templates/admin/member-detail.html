@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('会员详情')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','member')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('会员详情')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="mb-3">
+                <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/member}">返回会员列表</a>
+            </div>
+
+            <!--
+              账目一致性校验：余额应与账户流水逐笔累加完全相等。
+              这是验证「结算数据一致性」最直接的手段，差额非 0 即为账务异常。
+            -->
+            <div class="alert py-2"
+                 th:classappend="${diff != null and diff.signum() == 0} ? 'alert-success' : 'alert-danger'">
+                <span th:if="${diff != null and diff.signum() == 0}">
+                    <strong>账目校验通过</strong>：账户余额与账户流水逐笔累加完全一致，差额 0.00 元。
+                </span>
+                <span th:unless="${diff != null and diff.signum() == 0}">
+                    <strong>账目异常</strong>：余额与流水累加存在差额 <span th:text="${diff}">0</span> 元，
+                    请核查该会员的资金记录。
+                </span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6>会员资料</h6>
+                        <form method="post" th:action="@{/admin/member/update}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" th:value="${member.id}">
+
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                <tr>
+                                    <td class="hint" style="width:110px">会员卡号</td>
+                                    <td th:text="${member.cardNo}">M0000</td>
+                                </tr>
+                                <tr>
+                                    <td class="hint">身份证号</td>
+                                    <td th:text="${member.idCard != null ? member.idCard : '（自助注册未采集）'}">-</td>
+                                </tr>
+                                <tr>
+                                    <td class="hint">账户余额</td>
+                                    <td>
+                                        <strong th:text="${#numbers.formatDecimal(member.balance, 1, 2)} + ' 元'">0.00 元</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="hint">冻结押金</td>
+                                    <td th:text="${#numbers.formatDecimal(member.deposit, 1, 2)} + ' 元'">0.00 元</td>
+                                </tr>
+                                <tr>
+                                    <td class="hint">开卡时间</td>
+                                    <td th:text="${#temporals.format(member.createTime, 'yyyy-MM-dd HH:mm')}">-</td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <hr style="border-color:#f1f3f5">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="name">姓名</label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                       th:value="${member.name}" maxlength="32">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="phone">手机号</label>
+                                <input type="text" class="form-control" id="phone" name="phone"
+                                       th:value="${member.phone}" maxlength="11">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="level">会员等级</label>
+                                <select class="form-select" id="level" name="level">
+                                    <option th:each="lv : ${levels}" th:value="${lv.level}"
+                                            th:selected="${lv.level == member.level}"
+                                            th:text="${lv.levelName} + '（折扣 ' + ${lv.discount} + '）'"></option>
+                                </select>
+                                <div class="hint mt-1">
+                                    等级折扣参与计费，实际折扣取「区域会员折扣」与「等级折扣」中更优惠的一个。
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">保存资料</button>
+                        </form>
+                    </div>
+
+                    <div class="card-box">
+                        <h6>账户与密码</h6>
+
+                        <form method="post" th:action="@{/admin/member/status}" class="mb-3"
+                              onsubmit="return confirm('确认变更该会员的账户状态？');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" th:value="${member.id}">
+                            <input type="hidden" name="status" th:value="${member.status == 1} ? 0 : 1">
+                            <button type="submit" class="btn btn-sm"
+                                    th:classappend="${member.status == 1} ? 'btn-outline-danger' : 'btn-outline-success'"
+                                    th:text="${member.status == 1} ? '冻结账户' : '解冻账户'">冻结账户</button>
+                            <span class="hint ms-2"
+                                  th:text="${member.status == 1} ? '冻结后该会员无法充值、消费、开台与预约' : '解冻后恢复正常使用'"></span>
+                        </form>
+
+                        <form method="post" th:action="@{/admin/member/reset-password}"
+                              onsubmit="return confirm('确认重置该会员密码？');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" th:value="${member.id}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="newPassword" required
+                                       minlength="6" placeholder="新密码，至少 6 位">
+                                <button type="submit" class="btn btn-outline-secondary">重置密码</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>账户流水</h6>
+                        <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无流水记录</div>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                            <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>类型</th>
+                                <th class="text-end">变动</th>
+                                <th class="text-end">变动后余额</th>
+                                <th>说明</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="r : ${page.records}">
+                                <td th:text="${#temporals.format(r.createTime, 'MM-dd HH:mm:ss')}">-</td>
+                                <td th:text="${r.changeTypeName}">充值</td>
+                                <td class="text-end"
+                                    th:style="${r.changeAmount.signum() > 0} ? 'color:#a32d2d' : 'color:#3b6d11'"
+                                    th:text="${(r.changeAmount.signum() > 0 ? '+' : '') + #numbers.formatDecimal(r.changeAmount, 1, 2)}">0.00</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(r.afterBalance, 1, 2)}">0.00</td>
+                                <td class="hint" th:text="${r.remark}">说明</td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="hint"
+                                 th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                            <div>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current <= 1} ? 'disabled'"
+                                   th:href="@{/admin/member/detail(id=${member.id}, page=${page.current - 1})}">上一页</a>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current >= page.pages} ? 'disabled'"
+                                   th:href="@{/admin/member/detail(id=${member.id}, page=${page.current + 1})}">下一页</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-box">
+                        <h6>最近上机记录</h6>
+                        <div th:if="${#lists.isEmpty(sessions)}" class="empty">暂无上机记录</div>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(sessions)}">
+                            <thead>
+                            <tr>
+                                <th>机位</th>
+                                <th>开台</th>
+                                <th>下机</th>
+                                <th class="text-end">时长</th>
+                                <th class="text-end">上机费</th>
+                                <th class="text-end">商品费</th>
+                                <th class="text-end">合计</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="s : ${sessions}">
+                                <td th:text="${s.seatNo}">A01</td>
+                                <td th:text="${#temporals.format(s.startTime, 'MM-dd HH:mm')}">-</td>
+                                <td th:text="${s.endTime != null} ? ${#temporals.format(s.endTime, 'MM-dd HH:mm')} : '进行中'">-</td>
+                                <td class="text-end" th:text="${s.durationMinutes != null} ? ${s.durationMinutes} + ' 分' : '—'">—</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(s.hourFee, 1, 2)}">0.00</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(s.productFee, 1, 2)}">0.00</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(s.totalFee, 1, 2)}">0.00</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

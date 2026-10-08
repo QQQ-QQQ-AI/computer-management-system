@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('会员注册')}"></head>
+<body>
+
+<div class="login-wrap">
+    <div class="login-card">
+        <h1>会员注册</h1>
+        <div class="sub">使用手机号注册，注册后即可登录充值、预约上机</div>
+
+        <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}"></div>
+
+        <form method="post" th:action="@{/register}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div class="mb-3">
+                <label class="form-label" for="phone">手机号 <span style="color:#dc2626">*</span></label>
+                <input type="text" class="form-control" id="phone" name="phone"
+                       th:value="${phone}" required maxlength="11"
+                       placeholder="请输入 11 位手机号，将作为登录账号">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="name">姓名</label>
+                <input type="text" class="form-control" id="name" name="name"
+                       th:value="${name}" maxlength="32" placeholder="选填，不填将自动生成">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="password">密码 <span style="color:#dc2626">*</span></label>
+                <input type="password" class="form-control" id="password" name="password"
+                       required minlength="6" placeholder="至少 6 位">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="confirmPassword">确认密码 <span style="color:#dc2626">*</span></label>
+                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                       required minlength="6" placeholder="请再次输入密码">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-2">注 册</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a th:href="@{/login}" class="hint" style="text-decoration:none">已有账号？返回登录</a>
+        </div>
+
+        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+            注册即为普通会员。需要办理实体会员卡或升级等级，请到前台由收银员办理。
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/base :: scripts}"></div>
+
+<script>
+    // 前端先做一次一致性校验，减少一次往返；服务端仍会再校验一次
+    document.querySelector('form').addEventListener('submit', function (e) {
+        var p = document.getElementById('password').value;
+        var c = document.getElementById('confirmPassword').value;
+        if (p !== c) {
+            e.preventDefault();
+            alert('两次输入的密码不一致');
+        }
+    });
+</script>
+</body>
+</html>

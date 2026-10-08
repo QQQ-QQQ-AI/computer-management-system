@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('机位管理')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','seat')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('机位管理')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="stat-grid">
+                <div class="stat">
+                    <div class="label">空闲</div>
+                    <div class="value" th:text="${boardCount['FREE']}">0</div>
+                </div>
+                <div class="stat">
+                    <div class="label">使用中</div>
+                    <div class="value" style="color:#a32d2d" th:text="${boardCount['USING']}">0</div>
+                </div>
+                <div class="stat">
+                    <div class="label">预约中</div>
+                    <div class="value small" style="color:#0c447c" th:text="${boardCount['RESERVED']}">0</div>
+                </div>
+                <div class="stat">
+                    <div class="label">维修中</div>
+                    <div class="value small" style="color:#854f0b" th:text="${boardCount['MAINTENANCE']}">0</div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <h6>机位实时状态</h6>
+                <div class="seat-board">
+                    <div th:each="v : ${board}" class="seat-cell"
+                         th:classappend="${v.displayStatus == 'FREE'} ? 'seat-free'
+                                       : (${v.displayStatus == 'USING'} ? 'seat-using'
+                                       : (${v.displayStatus == 'RESERVED'} ? 'seat-reserved' : 'seat-maintenance'))"
+                         th:title="${v.tooltip}">
+                        <span class="dot"></span>
+                        <div class="no" th:text="${v.seatNo}">A01</div>
+                        <div class="st" th:text="${v.displayStatusName}">空闲</div>
+                        <div class="sub" th:if="${v.displayStatus == 'USING'}"
+                             th:text="${v.memberName}">会员</div>
+                        <div class="sub" th:if="${v.displayStatus == 'RESERVED'}"
+                             th:text="${v.reservationHint}">预约</div>
+                    </div>
+                </div>
+                <div class="seat-legend">
+                    <span class="item"><span class="swatch free"></span>空闲</span>
+                    <span class="item"><span class="swatch using"></span>使用中</span>
+                    <span class="item"><span class="swatch reserved"></span>预约</span>
+                    <span class="item"><span class="swatch maintenance"></span>维修</span>
+                </div>
+                <div class="hint mt-2">
+                    「预约」为实时派生的展示状态：机位本身仍保持空闲（不锁死），
+                    只有当预约时段覆盖当前时刻时才显示为蓝色。悬停可查看详情。
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="card-box">
+                        <h6 id="formTitle">新增机位</h6>
+                        <form method="post" th:action="@{/admin/seat/save}" id="seatForm">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" id="seatId">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="seatNo">机位编号 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="seatNo" name="seatNo"
+                                       required maxlength="16" placeholder="如 A01、B12">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="area">所属区域 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="area" name="area"
+                                       required maxlength="32" placeholder="如 普通区、竞技区"
+                                       list="areaOptions">
+                                <datalist id="areaOptions">
+                                    <option th:each="a : ${areaStats}" th:value="${a['area']}"></option>
+                                </datalist>
+                                <div class="hint mt-1">
+                                    <strong>区域要与计费规则中的区域名称一致</strong>，否则该机位结算时会找不到计费规则。
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="config">硬件配置</label>
+                                <input type="text" class="form-control" id="config" name="config"
+                                       maxlength="128" placeholder="如 i5-12400F / 16G / GTX1660S">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">保存</button>
+                            <button type="button" class="btn btn-outline-secondary" id="resetBtn">清空</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card-box">
+                        <h6>机位列表（<span th:text="${#lists.size(seats)}">0</span> 个）</h6>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>区域</th>
+                                <th>配置</th>
+                                <th>状态</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="s : ${seats}" th:attr="data-id=${s.id},data-seatno=${s.seatNo},data-area=${s.area},data-config=${s.config}">
+                                <td th:text="${s.seatNo}">A01</td>
+                                <td th:text="${s.area}">普通区</td>
+                                <td class="hint" th:text="${s.config}">配置</td>
+                                <td>
+                                    <span class="badge-soft bs-green" th:if="${s.status == 'FREE'}">空闲</span>
+                                    <span class="badge-soft bs-red" th:if="${s.status == 'USING'}">使用中</span>
+                                    <span class="badge-soft bs-gray" th:if="${s.status == 'MAINTENANCE'}">维护中</span>
+                                </td>
+                                <td style="white-space:nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
+
+                                    <form method="post" th:action="@{/admin/seat/status}" style="display:inline"
+                                          th:if="${s.status != 'USING'}"
+                                          onsubmit="return confirm('确认变更该机位状态？');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <input type="hidden" name="id" th:value="${s.id}">
+                                        <input type="hidden" name="status"
+                                               th:value="${s.status == 'FREE'} ? 'MAINTENANCE' : 'FREE'">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                th:text="${s.status == 'FREE'} ? '置为维护' : '恢复空闲'">置为维护</button>
+                                    </form>
+
+                                    <span class="hint" th:if="${s.status == 'USING'}">使用中不可改状态</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb;line-height:2">
+                            · 机位状态只能在<strong>空闲 ⇄ 维护中</strong>之间手工切换。<br>
+                            · <strong>使用中</strong>的状态由开台 / 结算驱动，不能手工改动，
+                            否则会出现「机位显示空闲但记录还在计费」的不一致。<br>
+                            · 维护中的机位不能开台，也不能被预约，状态流转由状态机统一校验。<br>
+                            · 改动<strong>所属区域</strong>会直接改变该机位结算时适用的计费规则，属于实质变更。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+<script>
+    // 点「编辑」把该行数据填进左侧表单；点「清空」回到新增模式
+    document.querySelectorAll('.edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var tr = this.closest('tr');
+            document.getElementById('seatId').value = tr.dataset.id;
+            document.getElementById('seatNo').value = tr.dataset.seatno;
+            document.getElementById('area').value = tr.dataset.area;
+            document.getElementById('config').value = tr.dataset.config || '';
+            document.getElementById('formTitle').textContent = '编辑机位 ' + tr.dataset.seatno;
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+    });
+    document.getElementById('resetBtn').addEventListener('click', function () {
+        document.getElementById('seatForm').reset();
+        document.getElementById('seatId').value = '';
+        document.getElementById('formTitle').textContent = '新增机位';
+    });
+</script>
+</body>
+</html>

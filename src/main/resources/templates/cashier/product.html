@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('商品记账')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('cashier','product')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('商品记账')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+            <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6>步骤一：读取会员</h6>
+                        <form method="get" th:action="@{/cashier/product}">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="cardNo"
+                                       th:value="${cardNo}" placeholder="扫描或输入会员卡号" required>
+                                <button type="submit" class="btn btn-outline-primary">查询</button>
+                            </div>
+                        </form>
+
+                        <div th:if="${member != null}" class="mt-3 pt-3" style="border-top:1px solid #f1f3f5">
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                <tr>
+                                    <td class="hint" style="width:100px">会员</td>
+                                    <td th:text="${member.name} + '（' + ${member.cardNo} + '）'">会员</td>
+                                </tr>
+                                <tr>
+                                    <td class="hint">可用余额</td>
+                                    <td th:text="${#numbers.formatDecimal(member.balance, 1, 2)} + ' 元'">0.00 元</td>
+                                </tr>
+                                <tr>
+                                    <td class="hint">上机状态</td>
+                                    <td>
+                                        <span class="badge-soft bs-red" th:if="${activeSession != null}"
+                                              th:text="'上机中 · 机位 ' + ${activeSession.seatNo}">上机中</span>
+                                        <span class="badge-soft bs-gray" th:unless="${activeSession != null}">未上机</span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="alert alert-warning py-2 mt-3" style="font-size:12.5px"
+                                 th:if="${activeSession != null}">
+                                该会员正在上机，本次商品将<strong>挂账到当前机位</strong>，
+                                下机结算时与上机费一并扣款。
+                            </div>
+                            <div class="alert alert-info py-2 mt-3" style="font-size:12.5px"
+                                 th:unless="${activeSession != null}">
+                                该会员未上机，本次商品将<strong>当场从余额扣款结清</strong>。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>步骤二：选择商品</h6>
+
+                        <div th:if="${member == null}" class="empty">请先在左侧查询会员卡号</div>
+
+                        <div th:if="${member != null}">
+                            <div th:if="${#lists.isEmpty(products)}" class="empty">暂无上架商品</div>
+
+                            <form method="post" th:action="@{/cashier/product}"
+                                  th:unless="${#lists.isEmpty(products)}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <input type="hidden" name="cardNo" th:value="${member.cardNo}">
+
+                                <table class="table table-sm">
+                                    <thead>
+                                    <tr>
+                                        <th style="width:56px"></th>
+                                        <th>商品</th>
+                                        <th class="text-end">单价</th>
+                                        <th class="text-end">库存</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="p : ${products}">
+                                        <td>
+                                            <input type="radio" name="productId" th:value="${p.id}"
+                                                   required th:disabled="${p.stock <= 0}">
+                                        </td>
+                                        <td th:text="${p.name}">商品</td>
+                                        <td class="text-end" th:text="${#numbers.formatDecimal(p.price, 1, 2)}">0.00</td>
+                                        <td class="text-end">
+                                            <span th:if="${p.stock > 0}" th:text="${p.stock}">0</span>
+                                            <span class="badge-soft bs-red" th:if="${p.stock <= 0}">已售罄</span>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="mb-3" style="max-width:180px">
+                                    <label class="form-label" for="quantity">数量</label>
+                                    <input type="number" class="form-control" id="quantity" name="quantity"
+                                           value="1" min="1" required>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">确认记账</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

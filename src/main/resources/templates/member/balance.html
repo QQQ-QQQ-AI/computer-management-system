@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('账户流水')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('member','balance')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('账户流水')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="stat-grid">
+                <div class="stat">
+                    <div class="label">当前余额</div>
+                    <div class="value">
+                        <span th:text="${#numbers.formatDecimal(member.balance, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">冻结押金</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(member.deposit, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+            </div>
+
+            <!--
+              账目一致性提示：差额为 0 表示「余额」正好等于「流水逐笔累加」。
+              这个校验依赖于所有资金变动都经过统一入口写入流水，
+              一旦有人绕过流水直接改余额，这里就会显示异常。
+            -->
+            <div class="alert py-2" th:classappend="${diff != null and diff.compareTo(T(java.math.BigDecimal).ZERO) == 0} ? 'alert-success' : 'alert-warning'">
+                <span th:if="${diff != null and diff.compareTo(T(java.math.BigDecimal).ZERO) == 0}">
+                    账目校验通过：当前余额与账户流水累加完全一致。
+                </span>
+                <span th:unless="${diff != null and diff.compareTo(T(java.math.BigDecimal).ZERO) == 0}">
+                    账目存在差异，差额 <span th:text="${diff}">0</span> 元，请联系前台核实。
+                </span>
+            </div>
+
+            <div class="card-box">
+                <h6>流水明细</h6>
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无流水记录</div>
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>类型</th>
+                        <th>说明</th>
+                        <th class="text-end">变动金额</th>
+                        <th class="text-end">变动后余额</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${page.records}">
+                        <td th:text="${#temporals.format(r.createTime, 'yyyy-MM-dd HH:mm:ss')}">-</td>
+                        <td>
+                            <span class="badge-soft bs-green" th:if="${r.changeAmount != null and r.changeAmount.signum() > 0}"
+                                  th:text="${r.changeTypeName}">充值</span>
+                            <span class="badge-soft bs-red" th:if="${r.changeAmount != null and r.changeAmount.signum() < 0}"
+                                  th:text="${r.changeTypeName}">消费</span>
+                        </td>
+                        <td class="hint" th:text="${r.remark}">说明</td>
+                        <td class="text-end"
+                            th:style="${r.changeAmount != null and r.changeAmount.signum() > 0} ? 'color:#a32d2d' : 'color:#3b6d11'"
+                            th:text="${(r.changeAmount != null and r.changeAmount.signum() > 0 ? '+' : '') + #numbers.formatDecimal(r.changeAmount, 1, 2)}">
+                            +0.00
+                        </td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(r.afterBalance, 1, 2)}">0.00</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/member/balance(page=${page.current - 1})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/member/balance(page=${page.current + 1})}">下一页</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

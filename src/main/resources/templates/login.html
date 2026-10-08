@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('登录')}"></head>
+<body>
+
+<div class="login-wrap">
+    <div class="login-card">
+        <h1>网咖管理系统</h1>
+        <div class="sub">会员自助 · 收银办理 · 门店管理</div>
+
+        <div th:if="${msg}" class="alert alert-success py-2" th:text="${msg}"></div>
+        <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}"></div>
+
+        <form method="post" th:action="@{/login}" id="loginForm">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <!-- 身份切换：会员与员工两套登录入口，共用同一个表单 -->
+            <div class="login-tabs">
+                <input type="radio" name="type" id="typeMember" value="MEMBER"
+                       th:checked="${type == null or type == 'MEMBER'}">
+                <label for="typeMember">会员登录</label>
+
+                <input type="radio" name="type" id="typeStaff" value="STAFF"
+                       th:checked="${type == 'STAFF'}">
+                <label for="typeStaff">员工登录</label>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="account">账号</label>
+                <input type="text" class="form-control" id="account" name="account"
+                       th:value="${account}" required autocomplete="username"
+                       placeholder="会员填手机号，员工填账号">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="password">密码</label>
+                <input type="password" class="form-control" id="password" name="password"
+                       required autocomplete="current-password" placeholder="请输入密码">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-2">登 录</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a th:href="@{/register}" class="hint" style="text-decoration:none">还没有会员卡？立即注册</a>
+        </div>
+
+        <!--
+          演示账号提示。答辩时可直接照此登录，省去现场翻文档。
+          正式部署应删除这一段。
+        -->
+        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+            <div style="color:#6b7280;margin-bottom:4px">演示账号</div>
+            管理员　admin / admin123<br>
+            收银员　cashier01 / cashier123<br>
+            会员　　13800001111 / 123456
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/base :: scripts}"></div>
+
+<script>
+    // 切换身份时同步调整账号输入框的提示，减少填错
+    document.querySelectorAll('input[name=type]').forEach(function (el) {
+        el.addEventListener('change', function () {
+            var account = document.getElementById('account');
+            account.placeholder = this.value === 'MEMBER'
+                ? '请输入注册手机号'
+                : '请输入员工账号';
+        });
+    });
+</script>
+</body>
+</html>

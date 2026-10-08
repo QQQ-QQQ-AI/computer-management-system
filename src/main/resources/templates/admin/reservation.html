@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('预约管理')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','reservation')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('预约管理')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>预约记录</h6>
+
+                <div class="mb-3">
+                    <a class="btn btn-sm" th:classappend="${status == null} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/admin/reservation}">全部</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'PENDING'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/admin/reservation(status='PENDING')}">待核销</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'USED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/admin/reservation(status='USED')}">已核销</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'EXPIRED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/admin/reservation(status='EXPIRED')}">已过期</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'CANCELED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/admin/reservation(status='CANCELED')}">已取消</a>
+                </div>
+
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">没有符合条件的预约</div>
+
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>预约单号</th>
+                        <th>会员</th>
+                        <th>联系电话</th>
+                        <th>机位</th>
+                        <th>到店时段</th>
+                        <th>提交时间</th>
+                        <th>状态</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${page.records}">
+                        <td th:text="${r.code}">R0001</td>
+                        <td th:text="${r.memberName}">会员</td>
+                        <td th:text="${r.phone}">-</td>
+                        <td>
+                            <span th:text="${r.seatNo}">A01</span>
+                            <span class="hint" th:text="'· ' + ${r.area}"></span>
+                        </td>
+                        <td th:text="${#temporals.format(r.startTime, 'MM-dd HH:mm')} + ' ~ '
+                                     + ${#temporals.format(r.endTime, 'MM-dd HH:mm')}">-</td>
+                        <td class="hint" th:text="${#temporals.format(r.createTime, 'MM-dd HH:mm')}">-</td>
+                        <td th:text="${r.statusName}">待核销</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/admin/reservation(page=${page.current - 1}, status=${status})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/admin/reservation(page=${page.current + 1}, status=${status})}">下一页</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <h6>预约机制说明</h6>
+                <div class="hint" style="line-height:2">
+                    · <strong>冲突检测</strong>：同一机位在所选时段内若已有「待核销」或「已核销」的预约，
+                    新预约会被拒绝。判定条件为新开始 &lt; 已有结束 且 新结束 &gt; 已有开始，
+                    因此<strong>首尾相接（如 10:00-12:00 与 12:00-14:00）不算冲突</strong>。<br>
+                    · <strong>超时自动作废</strong>：超过预约开始时间15分钟仍未核销或时段已结束的，由定时任务每分钟扫描一次并置为「已过期」，
+                    无需人工干预。<br>
+                    · <strong>机位不设「已预约」状态</strong>：预约是否占用机位由时段重叠判断，
+                    因此「预约今晚 8 点」不会导致该机位从现在起无法使用 ——
+                    这也是本系统只用三种机位状态的原因。<br>
+                    · 会员可自行取消本人尚未到店的预约；到店后需由收银员核销，核销成功后自动在原机位开台。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('设备租赁')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('member','rentals')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('设备租赁')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>可租外设与租金押金标准</h6>
+                        <div th:if="${#lists.isEmpty(equipments)}" class="empty">当前没有可租设备</div>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(equipments)}">
+                            <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>类别</th>
+                                <th class="text-end">日租金</th>
+                                <th class="text-end">押金</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="e : ${equipments}">
+                                <td th:text="${e.code}">EQ-001</td>
+                                <td th:text="${e.category}">机械键盘</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(e.rentPrice, 1, 2)}">0.00</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(e.deposit, 1, 2)}">0.00</td>
+                                <td>
+                                    <form method="post" th:action="@{/member/rentals}" style="display:inline"
+                                          onsubmit="return confirm('确认租借该设备？将冻结押金，归还后原额解冻。');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                        <input type="hidden" name="equipmentId" th:value="${e.id}">
+                                        <button type="submit" class="btn btn-sm btn-primary">申请租借</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                            租借时按标准冻结押金（从可用余额划入冻结额度），归还且确认无损坏后押金原额解冻。
+                            租金按实际租期结算，不足一天按一天计。
+                        </div>
+                    </div>
+
+                    <div class="card-box">
+                        <h6>全部设备状态</h6>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>类别</th>
+                                <th class="text-end">日租金</th>
+                                <th class="text-end">押金</th>
+                                <th>状态</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="e : ${allEquipments}">
+                                <td th:text="${e.code}">EQ-001</td>
+                                <td th:text="${e.category}">机械键盘</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(e.rentPrice, 1, 2)}">0.00</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(e.deposit, 1, 2)}">0.00</td>
+                                <td>
+                                    <span class="badge-soft bs-green" th:if="${e.status == 'IN_STOCK'}">在库可租</span>
+                                    <span class="badge-soft bs-red" th:if="${e.status == 'RENTED'}">已租出</span>
+                                    <span class="badge-soft bs-gray" th:if="${e.status == 'REPAIR'}">维修中</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6>我的租赁记录</h6>
+                        <div class="hint mb-2">
+                            可用余额 <strong th:text="${#numbers.formatDecimal(member.balance, 1, 2)}">0.00</strong> 元
+                            　冻结押金 <strong th:text="${#numbers.formatDecimal(member.deposit, 1, 2)}">0.00</strong> 元
+                        </div>
+                        <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无租赁记录</div>
+                        <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                            <thead>
+                            <tr>
+                                <th>设备</th>
+                                <th>租借时间</th>
+                                <th class="text-end">押金</th>
+                                <th>状态</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="r : ${page.records}">
+                                <td th:text="${r.category} + ' ' + ${r.equipmentCode}">设备</td>
+                                <td th:text="${#temporals.format(r.rentTime, 'MM-dd HH:mm')}">-</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(r.deposit, 1, 2)}">0.00</td>
+                                <td>
+                                    <span class="badge-soft bs-amber" th:if="${r.status == 'RENTING'}">租借中</span>
+                                    <span class="badge-soft bs-green" th:if="${r.status == 'RETURNED'}">已归还</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="hint"
+                                 th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                            <div>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current <= 1} ? 'disabled'"
+                                   th:href="@{/member/rentals(page=${page.current - 1})}">上一页</a>
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${page.current >= page.pages} ? 'disabled'"
+                                   th:href="@{/member/rentals(page=${page.current + 1})}">下一页</a>
+                            </div>
+                        </div>
+
+                        <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                            归还设备请到前台办理，由收银员确认设备完好后解冻押金并结算租金。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

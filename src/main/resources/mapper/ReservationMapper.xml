@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cafe.mapper.ReservationMapper">
+
+    <!-- 会员当前有效预约：待核销且尚未过期 -->
+    <select id="selectActiveByMember" resultType="com.cafe.entity.Reservation">
+        SELECT r.id, r.code, r.member_id, r.seat_id, r.start_time, r.end_time,
+               r.status, r.create_time,
+               m.name AS member_name, m.phone,
+               st.seat_no, st.area
+        FROM reservation r
+        LEFT JOIN member m ON m.id = r.member_id
+        LEFT JOIN seat   st ON st.id = r.seat_id
+        WHERE r.member_id = #{memberId}
+          AND r.status = 'PENDING'
+          AND r.end_time &gt;= NOW()
+        ORDER BY r.start_time ASC
+    </select>
+
+    <select id="selectDetailPage" resultType="com.cafe.entity.Reservation">
+        SELECT r.id, r.code, r.member_id, r.seat_id, r.start_time, r.end_time,
+               r.status, r.create_time,
+               m.name AS member_name, m.phone,
+               st.seat_no, st.area
+        FROM reservation r
+        LEFT JOIN member m ON m.id = r.member_id
+        LEFT JOIN seat   st ON st.id = r.seat_id
+        <where>
+            <if test="memberId != null">AND r.member_id = #{memberId}</if>
+            <if test="status != null and status != ''">AND r.status = #{status}</if>
+        </where>
+        ORDER BY r.create_time DESC
+    </select>
+
+</mapper>

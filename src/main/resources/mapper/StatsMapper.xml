@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cafe.mapper.StatsMapper">
+
+    <!-- ============ 单项收入合计 ============
+         统一口径：以「结算时间 end_time」为收入确认时点。
+         理由：上机费在下机结算那一刻才真正产生，用开台时间会让跨天订单归到错误的一天。
+         所有统计 SQL 必须保持同一口径，否则各项数字互相矛盾。 -->
+
+    <select id="sumHourFee" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(hour_fee), 0) FROM seat_session
+        WHERE status = 'FINISHED' AND end_time &gt;= #{start} AND end_time &lt; #{end}
+    </select>
+
+    <!--
+      商品收入的确认时点分两种情形，用 IFNULL 统一到一个时间表达式：
+        1. 挂在上机记录上的（会员上机期间拿的商品）→ 以该记录的结算时间 end_time 为准，
+           因为钱是下机时才收的，未结算就不算收入；
+        2. 没有关联上机记录的（前台直接购买）→ 当场结清，以记账时间 create_time 为准。
+      只按 create_time 统计会把「钱还没收」的挂账消费记成收入。
+    -->
+    <select id="sumProductFee" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(o.amount), 0)
+        FROM product_order o
+        LEFT JOIN seat_session s ON s.id = o.session_id
+        WHERE IFNULL(s.end_time, o.create_time) &gt;= #{start}
+          AND IFNULL(s.end_time, o.create_time) &lt; #{end}
+          AND (o.session_id IS NULL OR s.status = 'FINISHED')
+    </select>
+
+    <select id="sumRentalFee" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(rent_fee), 0) FROM equipment_rental
+        WHERE return_time &gt;= #{start} AND return_time &lt; #{end}
+    </select>
+
+    <select id="sumRecharge" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(amount), 0) FROM recharge_record
+        WHERE create_time &gt;= #{start} AND create_time &lt; #{end}
+    </select>
+
+    <!-- 按经办人统计现金充值，用于收银员交接班核对现金箱 -->
+    <select id="sumCashRechargeByOperator" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(amount), 0) FROM recharge_record
+        WHERE type = 'CASH'
+          AND operator_id = #{operatorId}
+          AND create_time &gt;= #{start}
+          AND create_time &lt; #{end}
+    </select>
+
+    <!-- 上机人次同样按结算时间统计，保证与上机收入口径一致 -->
+    <select id="countSessions" resultType="int">
+        SELECT COUNT(*) FROM seat_session
+        WHERE status = 'FINISHED' AND end_time &gt;= #{start} AND end_time &lt; #{end}
+    </select>
+
+    <!-- ============ 近 N 天收入趋势（ECharts 折线图数据源）============
+         用递归 CTE 生成连续日期，保证没有流水的日期也出现在横轴上，
+         避免折线图出现断点。 -->
+    <select id="revenueTrend" resultType="java.util.Map">
+        WITH RECURSIVE date_seq AS (
+            SELECT CAST(#{startDate} AS DATE) AS dt
+            UNION ALL
+            SELECT DATE_ADD(dt, INTERVAL 1 DAY) FROM date_seq WHERE dt &lt; #{endDate}
+        )
+        SELECT DATE_FORMAT(dse.dt, '%m-%d')  AS label,
+               IFNULL(h.amount, 0)           AS hourFee,
+               IFNULL(p.amount, 0)           AS productFee,
+               IFNULL(r.amount, 0)           AS rentFee
+        FROM date_seq dse
+        LEFT JOIN (
+            SELECT DATE(end_time) AS d, SUM(hour_fee) AS amount
+            FROM seat_session WHERE status = 'FINISHED' GROUP BY DATE(end_time)
+        ) h ON h.d = dse.dt
+        LEFT JOIN (
+            SELECT DATE(IFNULL(s.end_time, o.create_time)) AS d, SUM(o.amount) AS amount
+            FROM product_order o
+            LEFT JOIN seat_session s ON s.id = o.session_id
+            WHERE o.session_id IS NULL OR s.status = 'FINISHED'
+            GROUP BY DATE(IFNULL(s.end_time, o.create_time))
+        ) p ON p.d = dse.dt
+        LEFT JOIN (
+            SELECT DATE(return_time) AS d, SUM(rent_fee) AS amount
+            FROM equipment_rental WHERE status = 'RETURNED' GROUP BY DATE(return_time)
+        ) r ON r.d = dse.dt
+        ORDER BY dse.dt
+    </select>
+
+    <!-- ============ 各区域收入占比（ECharts 饼图数据源）============ -->
+    <select id="areaRevenue" resultType="java.util.Map">
+        SELECT st.area          AS name,
+               IFNULL(SUM(s.hour_fee), 0) AS value
+        FROM seat_session s
+        JOIN seat st ON st.id = s.seat_id
+        WHERE s.status = 'FINISHED'
+          AND s.end_time &gt;= #{start}
+          AND s.end_time &lt; #{end}
+        GROUP BY st.area
+        ORDER BY value DESC
+    </select>
+
+    <!-- ============ 热销商品排行 ============ -->
+    <!-- 热销排行口径与商品收入保持一致：只统计已确认收款的部分 -->
+    <select id="topProducts" resultType="java.util.Map">
+        SELECT p.name                        AS name,
+               IFNULL(SUM(o.quantity), 0)    AS qty,
+               IFNULL(SUM(o.amount), 0)      AS amount
+        FROM product_order o
+        JOIN product p ON p.id = o.product_id
+        LEFT JOIN seat_session s ON s.id = o.session_id
+        WHERE (o.session_id IS NULL OR s.status = 'FINISHED')
+          AND IFNULL(s.end_time, o.create_time) &gt;= #{start}
+          AND IFNULL(s.end_time, o.create_time) &lt; #{end}
+        GROUP BY p.id, p.name
+        ORDER BY qty DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

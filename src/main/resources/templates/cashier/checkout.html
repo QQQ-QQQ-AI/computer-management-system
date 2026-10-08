@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('下机结算')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('cashier','checkout')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('下机结算')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>在机上机记录（<span th:text="${#lists.size(usingList)}">0</span> 台）</h6>
+
+                <div th:if="${#lists.isEmpty(usingList)}" class="empty">
+                    当前没有需要结算的记录
+                </div>
+
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(usingList)}">
+                    <thead>
+                    <tr>
+                        <th>记录号</th>
+                        <th>机位</th>
+                        <th>会员</th>
+                        <th>开台时间</th>
+                        <th class="text-end">计费时长</th>
+                        <th class="text-end">按小时方案</th>
+                        <th class="text-end">包时套餐</th>
+                        <th class="text-end">应收</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s : ${usingList}">
+                        <td th:text="'#' + ${s.id}">#1</td>
+                        <td>
+                            <span th:text="${s.seatNo}">A01</span>
+                            <span class="hint" th:text="'· ' + ${s.area}"></span>
+                        </td>
+                        <td>
+                            <span th:text="${s.memberName}">会员</span>
+                            <span class="hint" th:text="'(' + ${s.cardNo} + ')'"></span>
+                        </td>
+                        <td th:text="${#temporals.format(s.startTime, 'MM-dd HH:mm')}">-</td>
+
+                        <td class="text-end"
+                            th:text="${estimates[s.id] != null} ? ${estimates[s.id].billableMinutes} + ' 分' : '—'">—</td>
+                        <td class="text-end hint"
+                            th:text="${estimates[s.id] != null} ? ${#numbers.formatDecimal(estimates[s.id].hourlyTotal, 1, 2)} : '—'">—</td>
+                        <td class="text-end hint"
+                            th:text="${estimates[s.id] != null and estimates[s.id].packageTotal != null}
+                                     ? ${#numbers.formatDecimal(estimates[s.id].packageTotal, 1, 2)} : '无套餐'">无套餐</td>
+                        <td class="text-end">
+                            <strong th:if="${estimates[s.id] != null}"
+                                    th:text="${#numbers.formatDecimal(estimates[s.id].finalFee, 1, 2)}">0.00</strong>
+                            <span th:unless="${estimates[s.id] != null}" class="hint">无法预估</span>
+                            <div class="hint" style="font-size:11px"
+                                 th:if="${estimates[s.id] != null and estimates[s.id].hitPackage}">已取套餐</div>
+                        </td>
+
+                        <td>
+                            <form method="post" th:action="@{/cashier/checkout}" style="display:inline"
+                                  onsubmit="return confirm('确认结算？将从会员余额扣款并释放机位，此操作不可撤销。');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <input type="hidden" name="sessionId" th:value="${s.id}">
+                                <button type="submit" class="btn btn-sm btn-primary">结算</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-box">
+                <h6>结算规则说明</h6>
+                <div class="hint" style="line-height:2">
+                    · <strong>计费时长</strong>按实际上机时间<strong>向上取整到 5 分钟</strong>。<br>
+                    · <strong>折扣</strong>取「区域会员折扣」与「会员等级折扣」中<strong>更优惠的一档</strong>。<br>
+                    · <strong>自动取优</strong>：上表同时列出「按小时」与「包时套餐」两个方案的金额，
+                    系统自动选用更低的一个，收银员可据此向顾客解释。<br>
+                    · 会员在上机期间挂账的商品消费会<strong>并入本次结算一并扣款</strong>。<br>
+                    · 余额不足时结算会被拒绝，并提示还差多少，请先办理充值。<br>
+                    · 结算动作（算费、扣款、写流水、更新记录、释放机位）在<strong>同一事务</strong>内完成，
+                    不会出现扣了钱但机位没释放的情况。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

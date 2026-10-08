@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('商品消费明细')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('member','fees')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('商品消费明细')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>
+                    商品消费明细
+                    <span class="hint" th:if="${sessionId != null}" th:text="'（仅显示上机记录 #' + ${sessionId} + '）'"></span>
+                </h6>
+                <div class="mb-3" th:if="${sessionId != null}">
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/member/orders}">显示全部</a>
+                </div>
+
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无记录</div>
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>商品</th>
+                        <th class="text-end">数量</th>
+                        <th class="text-end">金额</th>
+                        <th>关联上机记录</th>
+                        <th>结算方式</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="o : ${page.records}">
+                        <td th:text="${#temporals.format(o.createTime, 'yyyy-MM-dd HH:mm:ss')}">-</td>
+                        <td th:text="${o.productName}">商品</td>
+                        <td class="text-end" th:text="${o.quantity}">1</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(o.amount, 1, 2)}">0.00</td>
+                        <td th:text="${o.sessionId != null} ? '#' + ${o.sessionId} : '—'">—</td>
+                        <td>
+                            <span class="badge-soft bs-amber" th:if="${o.sessionId != null}">随上机结算</span>
+                            <span class="badge-soft bs-blue" th:if="${o.sessionId == null}">当场结清</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/member/orders(page=${page.current - 1}, sessionId=${sessionId})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/member/orders(page=${page.current + 1}, sessionId=${sessionId})}">下一页</a>
+                    </div>
+                </div>
+
+                <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                    上机期间购买的商品会挂在当前机位上，下机结算时与上机费一并扣款；
+                    未上机时购买的商品则当场从余额中结清。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

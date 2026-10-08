@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('会员开卡')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('cashier','open-card')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('会员开卡')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card-box">
+                        <h6>办理新会员卡</h6>
+                        <form method="post" th:action="@{/cashier/open-card}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <div class="mb-3">
+                                <label class="form-label">系统分配卡号</label>
+                                <input type="text" class="form-control" th:value="${nextCardNo}" disabled>
+                                <div class="hint mt-1">
+                                    此处为<strong>预计卡号</strong>，仅供确认格式；实际卡号在提交时才生成，
+                                    以办理成功后的提示为准。
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="name">姓名 <span style="color:#dc2626">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                           required maxlength="32" placeholder="请输入真实姓名">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="phone">手机号 <span style="color:#dc2626">*</span></label>
+                                    <input type="text" class="form-control" id="phone" name="phone"
+                                           required maxlength="11" placeholder="11 位手机号">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="idCard">身份证号 <span style="color:#dc2626">*</span></label>
+                                <input type="text" class="form-control" id="idCard" name="idCard"
+                                       required maxlength="18" placeholder="18 位身份证号，系统会校验校验位">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="level">会员等级</label>
+                                    <select class="form-select" id="level" name="level">
+                                        <option th:each="lv : ${levels}" th:value="${lv.level}"
+                                                th:selected="${lv.level == 1}"
+                                                th:text="${lv.levelName} + '（折扣 ' + ${lv.discount} + '）'">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="password">初始密码</label>
+                                    <input type="text" class="form-control" id="password" name="password"
+                                           maxlength="20" placeholder="留空则用手机号后 6 位">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="initialAmount">开卡充值金额（元）</label>
+                                <input type="number" class="form-control" id="initialAmount" name="initialAmount"
+                                       step="0.01" min="0" placeholder="可留空，表示暂不充值">
+                                <div class="hint mt-1">
+                                    填写后会生成一条充值记录与账户流水，可在「余额与流水」中查到。
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">确认开卡</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card-box">
+                        <h6>开卡须知</h6>
+                        <div class="hint" style="line-height:2">
+                            · 姓名、身份证号、手机号均为必填，身份证号会校验校验位，录错会当场提示。<br>
+                            · 手机号同时作为会员的登录账号，全系统不可重复。<br>
+                            · 初始密码留空时默认为手机号后 6 位，请提醒顾客首次登录后修改。<br>
+                            · 开卡充值会计入账户流水，可用于交接班对账。<br>
+                            · 会员也可自行在登录页注册，但自助注册不采集身份证，
+                            实体会员卡需在此办理。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

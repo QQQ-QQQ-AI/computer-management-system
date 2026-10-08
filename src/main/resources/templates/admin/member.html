@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('会员管理')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','member')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('会员管理')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>会员查询</h6>
+                <form method="get" th:action="@{/admin/member}" class="row g-2 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label">关键字</label>
+                        <input type="text" class="form-control" name="keyword" th:value="${keyword}"
+                               placeholder="姓名 / 卡号 / 手机号">
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">账户状态</label>
+                        <select class="form-select" name="status">
+                            <option value="" th:selected="${status == null}">全部</option>
+                            <option value="1" th:selected="${status != null and status == 1}">正常</option>
+                            <option value="0" th:selected="${status != null and status == 0}">已冻结</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">查询</button>
+                    </div>
+                    <div class="col-auto">
+                        <a class="btn btn-outline-secondary" th:href="@{/admin/member}">重置</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-box">
+                <h6>会员列表（共 <span th:text="${page.total}">0</span> 位）</h6>
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">没有符合条件的会员</div>
+
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>卡号</th>
+                        <th>姓名</th>
+                        <th>手机号</th>
+                        <th>等级</th>
+                        <th class="text-end">余额</th>
+                        <th class="text-end">冻结押金</th>
+                        <th>状态</th>
+                        <th>开卡时间</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${page.records}">
+                        <td th:text="${m.cardNo}">M0000</td>
+                        <td th:text="${m.name}">姓名</td>
+                        <td th:text="${m.phone}">13800000000</td>
+                        <td>
+                            <span th:text="${m.levelName}">普通</span>
+                            <span class="hint" th:if="${m.levelDiscount != null}"
+                                  th:text="'(' + ${m.levelDiscount} + ')'"></span>
+                        </td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(m.balance, 1, 2)}">0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(m.deposit, 1, 2)}">0.00</td>
+                        <td>
+                            <span class="badge-soft bs-green" th:if="${m.status == 1}">正常</span>
+                            <span class="badge-soft bs-red" th:if="${m.status != 1}">已冻结</span>
+                        </td>
+                        <td th:text="${#temporals.format(m.createTime, 'yyyy-MM-dd')}">-</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary"
+                               th:href="@{/admin/member/detail(id=${m.id})}">详情</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/admin/member(page=${page.current - 1}, keyword=${keyword}, status=${status})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/admin/member(page=${page.current + 1}, keyword=${keyword}, status=${status})}">下一页</a>
+                    </div>
+                </div>
+
+                <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                    会员的消费明细、账户流水与账目一致性校验都在「详情」页。
+                    <strong>冻结账户</strong>会同时阻止该会员充值、消费、开台与预约，但不会影响其余额与押金。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

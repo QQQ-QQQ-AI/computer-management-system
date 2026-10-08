@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<!--
+  公共布局片段。
+  各页面用 th:replace 引用这里的 head / sidebar / topbar / scripts，
+  避免每个页面重复写导航与样式引用。
+
+  Bootstrap 与 ECharts 均为本地文件（static/vendor/），不依赖 CDN，
+  演示或答辩环境断网时页面依然正常显示。
+-->
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+
+<!-- ==================== 页面头部 ==================== -->
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' - 网咖管理系统'">网咖管理系统</title>
+    <link rel="stylesheet" th:href="@{/vendor/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+
+<body>
+
+<!-- ==================== 左侧导航 ====================
+     根据角色渲染不同菜单。active 参数用于高亮当前页。 -->
+<aside th:fragment="sidebar(role, active)" class="sidebar">
+
+    <div class="brand">
+        网咖管理系统
+        <small th:switch="${role}">
+            <span th:case="'member'">会员自助端</span>
+            <span th:case="'cashier'">收银员端</span>
+            <span th:case="'admin'">管理后台</span>
+        </small>
+    </div>
+
+    <!-- 会员自助端 -->
+    <nav th:if="${role == 'member'}">
+        <a th:href="@{/member}" th:classappend="${active == 'index'} ? 'active'">首页概览</a>
+        <a th:href="@{/member/recharge}" th:classappend="${active == 'recharge'} ? 'active'">在线充值</a>
+        <a th:href="@{/member/balance}" th:classappend="${active == 'balance'} ? 'active'">余额与流水</a>
+        <a th:href="@{/member/sessions}" th:classappend="${active == 'sessions'} ? 'active'">上机记录</a>
+        <a th:href="@{/member/fees}" th:classappend="${active == 'fees'} ? 'active'">上机费用</a>
+        <a th:href="@{/member/rentals}" th:classappend="${active == 'rentals'} ? 'active'">设备租赁</a>
+        <a th:href="@{/member/reservation}" th:classappend="${active == 'reservation'} ? 'active'">在线预约</a>
+        <a th:href="@{/member/notices}" th:classappend="${active == 'notices'} ? 'active'">门店公告</a>
+        <a th:href="@{/member/profile}" th:classappend="${active == 'profile'} ? 'active'">个人资料</a>
+    </nav>
+
+    <!-- 收银员端 -->
+    <nav th:if="${role == 'cashier'}">
+        <a th:href="@{/cashier}" th:classappend="${active == 'index'} ? 'active'">收银工作台</a>
+        <a th:href="@{/cashier/open-card}" th:classappend="${active == 'open-card'} ? 'active'">会员开卡</a>
+        <a th:href="@{/cashier/open-seat}" th:classappend="${active == 'open-seat'} ? 'active'">开台上机</a>
+        <a th:href="@{/cashier/checkout}" th:classappend="${active == 'checkout'} ? 'active'">下机结算</a>
+        <a th:href="@{/cashier/product}" th:classappend="${active == 'product'} ? 'active'">商品记账</a>
+        <a th:href="@{/cashier/recharge}" th:classappend="${active == 'recharge'} ? 'active'">充值办理</a>
+        <a th:href="@{/cashier/rental}" th:classappend="${active == 'rental'} ? 'active'">租赁办理</a>
+        <a th:href="@{/cashier/reservation}" th:classappend="${active == 'reservation'} ? 'active'">预约核销</a>
+        <a th:href="@{/cashier/notices}" th:classappend="${active == 'notices'} ? 'active'">门店公告</a>
+    </nav>
+
+    <!-- 管理员端 -->
+    <nav th:if="${role == 'admin'}">
+        <a th:href="@{/admin}" th:classappend="${active == 'index'} ? 'active'">经营概览</a>
+        <a th:href="@{/admin/stats}" th:classappend="${active == 'stats'} ? 'active'">营收统计报表</a>
+        <a th:href="@{/admin/seat}" th:classappend="${active == 'seat'} ? 'active'">机位管理</a>
+        <a th:href="@{/admin/billing}" th:classappend="${active == 'billing'} ? 'active'">计费规则配置</a>
+        <a th:href="@{/admin/member}" th:classappend="${active == 'member'} ? 'active'">会员管理</a>
+        <a th:href="@{/admin/product}" th:classappend="${active == 'product'} ? 'active'">商品管理</a>
+        <a th:href="@{/admin/equipment}" th:classappend="${active == 'equipment'} ? 'active'">设备管理</a>
+        <a th:href="@{/admin/reservation}" th:classappend="${active == 'reservation'} ? 'active'">预约管理</a>
+        <a th:href="@{/admin/user}" th:classappend="${active == 'user'} ? 'active'">用户与权限</a>
+        <a th:href="@{/admin/notice}" th:classappend="${active == 'notice'} ? 'active'">公告管理</a>
+    </nav>
+
+    <div class="role-tag" th:if="${loginUser != null}">
+        <span th:text="${loginUser.name}">用户</span>
+        <span th:switch="${loginUser.role}">
+            <span th:case="'MEMBER'"> · 会员</span>
+            <span th:case="'CASHIER'"> · 收银员</span>
+            <span th:case="'ADMIN'"> · 管理员</span>
+        </span>
+    </div>
+</aside>
+
+<!-- ==================== 顶栏 ==================== -->
+<div th:fragment="topbar(title)" class="topbar">
+    <div class="page-title" th:text="${title}">页面标题</div>
+    <div class="user-info">
+        <span th:if="${loginUser != null}" th:text="'当前用户：' + ${loginUser.name}">当前用户</span>
+        <form method="post" th:action="@{/logout}" style="display:inline">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button type="submit" class="btn btn-sm btn-outline-secondary">退出登录</button></form>
+    </div>
+</div>
+
+<!-- ==================== 提示信息 ====================
+     由 Controller 通过 addFlashAttribute 传入，渲染后即消失。 -->
+<div th:fragment="flash">
+    <div th:if="${msg}" class="alert alert-success py-2 mb-3" th:text="${msg}"></div>
+    <div th:if="${error}" class="alert alert-danger py-2 mb-3" th:text="${error}"></div>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<div th:fragment="scripts">
+    <script th:src="@{/vendor/bootstrap.bundle.min.js}"></script>
+</div>
+
+<div th:fragment="scriptsChart">
+    <script th:src="@{/vendor/echarts.min.js}"></script>
+</div>
+
+</body>
+</html>

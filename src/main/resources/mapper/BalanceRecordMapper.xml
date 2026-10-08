@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cafe.mapper.BalanceRecordMapper">
+
+    <select id="selectDetailPage" resultType="com.cafe.entity.BalanceRecord">
+        SELECT b.id, b.member_id, b.change_type, b.change_amount,
+               b.before_balance, b.after_balance,
+               b.biz_type, b.biz_id, b.remark, b.operator_id, b.create_time,
+               m.name AS member_name, m.card_no
+        FROM balance_record b
+        LEFT JOIN member m ON m.id = b.member_id
+        <where>
+            <if test="memberId != null">AND b.member_id = #{memberId}</if>
+            <if test="changeType != null and changeType != ''">AND b.change_type = #{changeType}</if>
+        </where>
+        ORDER BY b.create_time DESC, b.id DESC
+    </select>
+
+</mapper>

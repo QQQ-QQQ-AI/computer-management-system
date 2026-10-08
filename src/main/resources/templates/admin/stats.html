@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('营收统计报表')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('admin','stats')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('营收统计报表')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <!-- 区间筛选 -->
+            <div class="card-box">
+                <h6>统计区间</h6>
+                <form method="get" th:action="@{/admin/stats}" class="row g-2 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label">开始日期</label>
+                        <input type="date" class="form-control" name="startDate" th:value="${startDate}" required>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">结束日期</label>
+                        <input type="date" class="form-control" name="endDate" th:value="${endDate}" required>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">默认区间天数</label>
+                        <select class="form-select" name="days">
+                            <option th:each="d : ${dayOptions}" th:value="${d}"
+                                    th:selected="${d == days}" th:text="${d} + ' 天'"></option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">查询</button>
+                    </div>
+                    <div class="col-auto">
+                        <a class="btn btn-outline-secondary" th:href="@{/admin/stats(days=7)}">恢复默认</a>
+                    </div>
+                </form>
+                <div class="hint mt-2">
+                    当前区间：<strong th:text="${startDate} + ' 至 ' + ${endDate}"></strong>
+                </div>
+            </div>
+
+            <!-- 区间汇总 -->
+            <div class="stat-grid">
+                <div class="stat">
+                    <div class="label">营业收入合计</div>
+                    <div class="value">
+                        <span th:text="${#numbers.formatDecimal(summary.totalRevenue, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">上机收入</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(summary.hourFee, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">商品收入</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(summary.productFee, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">设备租赁收入</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(summary.rentalFee, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="label">上机人次</div>
+                    <div class="value small" th:text="${summary.sessionCount}">0</div>
+                </div>
+                <div class="stat">
+                    <div class="label">区间充值额</div>
+                    <div class="value small">
+                        <span th:text="${#numbers.formatDecimal(summary.rechargeAmount, 1, 2)}">0.00</span>
+                        <span class="unit">元</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趋势折线 -->
+            <div class="card-box">
+                <h6>收入趋势（按天）</h6>
+                <div id="trendChart" class="chart" style="height:340px"></div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="card-box">
+                        <h6>各区域上机收入占比</h6>
+                        <div id="areaChart" class="chart"></div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card-box">
+                        <h6>热销商品 TOP 6</h6>
+                        <div id="productChart" class="chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表 -->
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="card-box">
+                        <h6>各区域上机收入明细</h6>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>区域</th>
+                                <th class="text-end">上机收入</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="a : ${summary.areaRevenue}">
+                                <td th:text="${a['name']}">普通区</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(a['value'], 1, 2)} + ' 元'">0.00 元</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card-box">
+                        <h6>热销商品明细</h6>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>商品</th>
+                                <th class="text-end">销量</th>
+                                <th class="text-end">销售额</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="p : ${summary.topProducts}">
+                                <td th:text="${p['name']}">商品</td>
+                                <td class="text-end" th:text="${p['qty']}">0</td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(p['amount'], 1, 2)} + ' 元'">0.00 元</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计口径说明：各项数字能互相印证的前提 -->
+            <div class="card-box">
+                <h6>统计口径说明</h6>
+                <div class="hint" style="line-height:2">
+                    · <strong>上机收入</strong>按<strong>结算时间</strong>确认。跨天上机的订单归入实际下机结算的那一天，
+                    而不是开台那一天。<br>
+                    · <strong>商品收入</strong>分两种情形：上机期间挂账的商品按所属上机记录的<strong>结算时间</strong>确认；
+                    未上机直接购买的按<strong>记账时间</strong>确认。未结算的挂账消费不计入收入。<br>
+                    · <strong>租赁收入</strong>按<strong>归还时间</strong>确认，因为租金在归还时才最终确定租期；
+                    押金属于冻结额度，不是收入。<br>
+                    · <strong>充值金额</strong>单独列出，属于<strong>预收款不计入营业收入</strong> ——
+                    顾客还没消费，钱只是预存在账户里。<br>
+                    · 全系统保持以上口径一致，因此「上机 + 商品 + 租赁 = 营业收入合计」恒成立，
+                    各区域收入之和也等于上机收入。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="chartData" style="display:none"
+     th:attr="data-trend=${trendJson},data-area=${areaJson},data-product=${productJson}"></div>
+
+<div th:replace="~{layout/base :: scripts}"></div>
+<div th:replace="~{layout/base :: scriptsChart}"></div>
+<script>
+    (function () {
+        var el = document.getElementById('chartData');
+        var trend = JSON.parse(el.dataset.trend || '[]');
+        var area = JSON.parse(el.dataset.area || '[]');
+        var products = JSON.parse(el.dataset.product || '[]');
+
+        if (trend.length) {
+            echarts.init(document.getElementById('trendChart')).setOption({
+                tooltip: {trigger: 'axis'},
+                legend: {data: ['上机收入', '商品收入', '租赁收入'], top: 0},
+                grid: {left: 50, right: 20, top: 44, bottom: 30},
+                xAxis: {type: 'category', data: trend.map(function (d) { return d.label; })},
+                yAxis: {type: 'value', name: '元'},
+                series: [
+                    {name: '上机收入', type: 'line', smooth: true, symbolSize: 6,
+                     data: trend.map(function (d) { return d.hourFee; })},
+                    {name: '商品收入', type: 'line', smooth: true, symbolSize: 6,
+                     data: trend.map(function (d) { return d.productFee; })},
+                    {name: '租赁收入', type: 'line', smooth: true, symbolSize: 6,
+                     data: trend.map(function (d) { return d.rentFee; })}
+                ]
+            });
+        }
+
+        if (area.length) {
+            echarts.init(document.getElementById('areaChart')).setOption({
+                tooltip: {trigger: 'item', formatter: '{b}：{c} 元（{d}%）'},
+                legend: {bottom: 0},
+                series: [{
+                    type: 'pie', radius: ['42%', '68%'], center: ['50%', '46%'],
+                    data: area, label: {formatter: '{b}\n{d}%'}
+                }]
+            });
+        }
+
+        if (products.length) {
+            echarts.init(document.getElementById('productChart')).setOption({
+                tooltip: {trigger: 'axis', axisPointer: {type: 'shadow'}},
+                grid: {left: 70, right: 30, top: 20, bottom: 30},
+                xAxis: {type: 'value', name: '销量'},
+                yAxis: {type: 'category', data: products.map(function (p) { return p.name; }).reverse()},
+                series: [{
+                    type: 'bar', barWidth: '52%',
+                    data: products.map(function (p) { return p.qty; }).reverse(),
+                    itemStyle: {color: '#378ADD'}
+                }]
+            });
+        }
+    })();
+</script>
+</body>
+</html>

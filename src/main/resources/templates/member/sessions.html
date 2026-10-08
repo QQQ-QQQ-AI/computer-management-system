@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('上机记录')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('member','sessions')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('上机记录查询')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>我的上机记录</h6>
+
+                <div class="mb-3">
+                    <a class="btn btn-sm" th:classappend="${status == null} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/member/sessions}">全部</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'USING'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/member/sessions(status='USING')}">使用中</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'FINISHED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/member/sessions(status='FINISHED')}">已结算</a>
+                </div>
+
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">暂无记录</div>
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>机位</th>
+                        <th>区域</th>
+                        <th>开台时间</th>
+                        <th>下机时间</th>
+                        <th class="text-end">时长</th>
+                        <th class="text-end">上机费</th>
+                        <th class="text-end">商品费</th>
+                        <th class="text-end">合计</th>
+                        <th>状态</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s : ${page.records}">
+                        <td th:text="${s.seatNo}">A01</td>
+                        <td th:text="${s.area}">普通区</td>
+                        <td th:text="${#temporals.format(s.startTime, 'yyyy-MM-dd HH:mm')}">-</td>
+                        <td th:text="${s.endTime != null} ? ${#temporals.format(s.endTime, 'yyyy-MM-dd HH:mm')} : '—'">—</td>
+                        <td class="text-end" th:text="${s.durationMinutes != null} ? ${s.durationMinutes} + ' 分' : '—'">—</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(s.hourFee, 1, 2)}">0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(s.productFee, 1, 2)}">0.00</td>
+                        <td class="text-end" th:text="${#numbers.formatDecimal(s.totalFee, 1, 2)}">0.00</td>
+                        <td>
+                            <span class="badge-soft bs-green" th:if="${s.status == 'FINISHED'}">已结算</span>
+                            <span class="badge-soft bs-red" th:if="${s.status == 'USING'}">使用中</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/member/sessions(page=${page.current - 1}, status=${status})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/member/sessions(page=${page.current + 1}, status=${status})}">下一页</a>
+                    </div>
+                </div>
+
+                <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb">
+                    计费时长按 5 分钟向上取整；会员实际折扣取「区域会员折扣」与「会员等级折扣」中更优惠的一档；
+                    按小时与包时套餐分别计算后自动取优。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>

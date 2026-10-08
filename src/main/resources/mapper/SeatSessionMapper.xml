@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cafe.mapper.SeatSessionMapper">
+
+    <!-- 上机记录联表查询的公共列：除主表字段外带出会员姓名/卡号与机位编号/区域 -->
+    <sql id="detailColumns">
+        s.id, s.member_id, s.seat_id, s.start_time, s.end_time, s.duration_minutes,
+        s.hour_fee, s.product_fee, s.total_fee, s.status, s.create_time,
+        m.name AS member_name, m.card_no,
+        st.seat_no, st.area
+    </sql>
+
+    <sql id="detailJoin">
+        FROM seat_session s
+        LEFT JOIN member m ON m.id = s.member_id
+        LEFT JOIN seat   st ON st.id = s.seat_id
+    </sql>
+
+    <!-- 分页查询上机记录：会员端传自己的 memberId，收银/管理端传 null 查全部 -->
+    <select id="selectDetailPage" resultType="com.cafe.entity.SeatSession">
+        SELECT <include refid="detailColumns"/>
+        <include refid="detailJoin"/>
+        <where>
+            <if test="memberId != null">AND s.member_id = #{memberId}</if>
+            <if test="status != null and status != ''">AND s.status = #{status}</if>
+        </where>
+        ORDER BY s.start_time DESC
+    </select>
+
+    <!-- 收银台「下机结算」列表：只取仍在使用中的记录 -->
+    <select id="selectUsingList" resultType="com.cafe.entity.SeatSession">
+        SELECT <include refid="detailColumns"/>
+        <include refid="detailJoin"/>
+        WHERE s.status = 'USING'
+        ORDER BY s.start_time ASC
+    </select>
+
+    <!-- 某会员进行中的上机记录（带机位编号与区域） -->
+    <select id="selectActiveByMember" resultType="com.cafe.entity.SeatSession">
+        SELECT <include refid="detailColumns"/>
+        <include refid="detailJoin"/>
+        WHERE s.member_id = #{memberId}
+          AND s.status = 'USING'
+        ORDER BY s.start_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 某会员某时段的累计上机消费 -->
+    <select id="sumHourFeeByMember" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(hour_fee), 0)
+        FROM seat_session
+        WHERE member_id = #{memberId}
+          AND status = 'FINISHED'
+          AND start_time &gt;= #{start}
+          AND start_time &lt; #{end}
+    </select>
+
+</mapper>

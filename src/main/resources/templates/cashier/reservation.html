@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head('预约核销')}"></head>
+<body>
+<div class="layout">
+    <aside th:replace="~{layout/base :: sidebar('cashier','reservation')}"></aside>
+    <div class="main">
+        <div th:replace="~{layout/base :: topbar('预约核销')}"></div>
+        <div class="content">
+            <div th:replace="~{layout/base :: flash}"></div>
+
+            <div class="card-box">
+                <h6>预约记录</h6>
+
+                <div class="mb-3">
+                    <a class="btn btn-sm" th:classappend="${status == 'PENDING'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/cashier/reservation(status='PENDING')}">待核销</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'USED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/cashier/reservation(status='USED')}">已核销</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'EXPIRED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/cashier/reservation(status='EXPIRED')}">已过期</a>
+                    <a class="btn btn-sm" th:classappend="${status == 'CANCELED'} ? 'btn-primary' : 'btn-outline-secondary'"
+                       th:href="@{/cashier/reservation(status='CANCELED')}">已取消</a>
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/cashier/reservation(status='')}">全部</a>
+                </div>
+
+                <div th:if="${#lists.isEmpty(page.records)}" class="empty">没有符合条件的预约</div>
+
+                <table class="table table-sm mb-0" th:unless="${#lists.isEmpty(page.records)}">
+                    <thead>
+                    <tr>
+                        <th>预约单号</th>
+                        <th>会员</th>
+                        <th>联系电话</th>
+                        <th>机位</th>
+                        <th>到店时段</th>
+                        <th>状态</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${page.records}">
+                        <td th:text="${r.code}">R0001</td>
+                        <td th:text="${r.memberName}">会员</td>
+                        <td th:text="${r.phone}">-</td>
+                        <td>
+                            <span th:text="${r.seatNo}">A01</span>
+                            <span class="hint" th:text="'· ' + ${r.area}"></span>
+                        </td>
+                        <td th:text="${#temporals.format(r.startTime, 'MM-dd HH:mm')} + ' ~ '
+                                     + ${#temporals.format(r.endTime, 'MM-dd HH:mm')}">-</td>
+                        <td>
+                            <span class="badge-soft bs-amber" th:if="${r.status == 'PENDING'}">待核销</span>
+                            <span class="badge-soft bs-green" th:if="${r.status == 'USED'}">已核销</span>
+                            <span class="badge-soft bs-gray" th:if="${r.status == 'CANCELED'}">已取消</span>
+                            <span class="badge-soft bs-gray" th:if="${r.status == 'EXPIRED'}">已过期</span>
+                        </td>
+                        <td>
+                            <form method="post" th:action="@{/cashier/reservation/verify}" style="display:inline"
+                                  th:if="${r.status == 'PENDING'}"
+                                  onsubmit="return confirm('确认核销该预约？核销后将直接在预约机位开台。');">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <input type="hidden" name="id" th:value="${r.id}">
+                                <button type="submit" class="btn btn-sm btn-primary">核销并开台</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="hint"
+                         th:text="'共 ' + ${page.total} + ' 条，第 ' + ${page.current} + ' / ' + ${page.pages} + ' 页'"></div>
+                    <div>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current <= 1} ? 'disabled'"
+                           th:href="@{/cashier/reservation(page=${page.current - 1}, status=${status})}">上一页</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:classappend="${page.current >= page.pages} ? 'disabled'"
+                           th:href="@{/cashier/reservation(page=${page.current + 1}, status=${status})}">下一页</a>
+                    </div>
+                </div>
+
+                <div class="hint mt-3 pt-3" style="border-top:1px dashed #e5e7eb;line-height:2">
+                    · 顾客到店后核对预约单号并核销，核销成功后自动为预约会员在原机位开台；开台失败时预约保持待核销。<br>
+                    · 超过预约开始时间15分钟仍未到店核销的，系统会<strong>定时自动置为已过期</strong>，
+                    无需手工处理，也不会影响机位可用性。<br>
+                    · 机位不设「已预约」状态：预约时段是否冲突由时段重叠检测判断，
+                    因此「预约今晚 8 点」不会导致该机位从现在起就无法使用。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>
